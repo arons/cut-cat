@@ -5,7 +5,7 @@ It was developed to edit videos quickly without transcoding them, but ffmpeg opt
 The primary goals are speed, ease of use, and stability. 
 Input files are not modified. 
 Things may not work properly with different video formats from different sources without transcoding. 
-It works great with the H.264/AAC/.mp4 video from my HTC One and my GoPro.
+It works great with my GoPro 8 videos.
 
 
 
