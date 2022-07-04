@@ -1,0 +1,2 @@
+ - add possibility to mix some audio?
+   see example https://stackoverflow.com/questions/11779490/how-to-add-a-new-audio-not-mixing-into-a-video-using-ffmpeg
