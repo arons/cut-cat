@@ -24,7 +24,6 @@ cut_number=0
 
 newcat ()
 {
-    rm cutfiles.txt
     cut_number=0
 }
 
@@ -41,10 +40,11 @@ cut ()
     fi
     rm -f cut$cut_number.ts
 
-    echo "cut $input_file s:$start_time e:$end_time"
+    echo ""
+    echo "process cut $input_file s:$start_time e:$end_time"
 
-    ROTATION=$(ffprobe -loglevel error -select_streams v:0 -show_entries stream_tags=rotate -of default=nw=1:nk=1 -i $input_file)
-    echo "rotation:${ROTATION}"
+    #ROTATION=$(ffprobe -loglevel error -select_streams v:0 -show_entries stream_tags=rotate -of default=nw=1:nk=1 -i $input_file)
+    #echo "rotation:${ROTATION}"
 
     PARAM="-hide_banner -loglevel panic"
 
@@ -59,9 +59,8 @@ cut ()
     PARAM="${PARAM} -map_metadata 0 -c:a copy "
     
     echo "param: ${PARAM}"
-    echo "cutfile: cut$cut_number.mp4"
 
-    echo "cutting ...  : cut$cut_number.mp4"
+    echo "cutting to file : cut$cut_number.mp4"
 
     set -e
     ffmpeg ${PARAM} cut$cut_number.mp4 > /dev/null
@@ -69,7 +68,7 @@ cut ()
 
     echo "file cut$cut_number.mp4" >> cutfiles.txt
 
-    echo "cutting done : cut$cut_number.mp4"
+    echo "done : cut$cut_number.mp4"
 }
 
 cat ()
@@ -92,10 +91,7 @@ cat ()
     echo "concat files:$cut_number"
     echo "concat files:$concat_string"
 
-
-
     ffmpeg -hide_banner -loglevel panic -f concat -i cutfiles.txt -map_metadata 0 -codec copy $output_file
-
 #    ffmpeg -i "$concat_string" -c copy  $output_file
 
 }
@@ -112,3 +108,35 @@ rotate ()
    input_file=$1
    ffmpeg -i $input_file -vf "hflip,vflip,format=yuv420p" -metadata:s:v rotate=0  "r_$input_file"
 }
+
+post(){
+
+    video_file=$1
+    fade_in=$2
+    fade_out=$3
+    audio_file=$4
+
+    dur=$(ffprobe -loglevel error -show_entries format=duration -of default=nk=1:nw=1 "$video_file")
+    offset=$(bc -l <<< "$dur"-"$fade_out")
+    echo "duration:$dur offset:$offset"
+
+    fade_video="[0:v]fade=type=in:duration=$fade_in,fade=type=out:duration=$fade_out:start_time='$offset'[v];"
+    echo "fade_video:$fade_video"
+
+    fade_audio="[0:a]afade=type=in:duration=$fade_in,afade=type=out:duration=$fade_out:start_time='$offset'[a];"
+    echo "fade_audio:$fade_audio"
+
+    params="-i $video_file -i $audio_file -filter_complex '$fade_video$fade_audio' -map '[v]' -map '[a]' fade/'$video_file' -c:v copy -shortest"
+    echo "params:$params"
+    #ffmpeg -i video.mkv -i audio.mp3 -map 0 -map 1:a -c:v copy -shortest output.mkv
+}
+
+## fade
+# video
+#ffmpeg -i video.mp4 -vf "fade=t=in:st=0:d=10,fade=t=out:st=10:d=5" -c:a copy out.mp4
+# audio
+# ffmpeg -i music.mp3 -af "afade=t=in:st=0:d=5,afade=t=out:st=5:d=5" out.mp3
+
+#  dur=$(ffprobe -loglevel error -show_entries format=duration -of default=nk=1:nw=1 "$f")
+#  offset=$(bc -l <<< "$dur"-1)
+#  ffmpeg -i "$f" -filter_complex "[0:v]fade=type=in:duration=1,fade=type=out:duration=1:start_time='$offset'[v];[0:a]afade=type=in:duration=1,afade=type=out:duration=1:start_time='$offset'[a]" -map "[v]" -map "[a]" fade/"$f"
